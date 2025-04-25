@@ -23,6 +23,7 @@ $RECYCLE.BIN/
 *.msix
 *.msm
 *.msp
+*.bat
 
 # Windows shortcuts
 *.lnk
