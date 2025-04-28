@@ -1,7 +1,7 @@
 import tkinter as tk
 from PIL import Image,ImageTk 
 from vars import *  # type: ignore
-
+import math
 
 def get_leg_id(ids):
         '''
@@ -60,7 +60,6 @@ class PathOptimisationFrame(tk.Frame):
         self.leg_start = None
         self.nodes = {}
         self.legs = []
-
 
     def create_node(self, event):
         '''
@@ -124,6 +123,12 @@ class PathOptimisationFrame(tk.Frame):
     
 
     def get_node_id(self, node):
+        '''
+        Gets the node id tag from the object provided
+
+        This is mainly used for finding the id of the clicked node
+        returns the node_id 
+        '''
         tags = self.canvas_map.gettags(node)
         for tag in tags:
             if "node_id_" in tag:
@@ -131,7 +136,13 @@ class PathOptimisationFrame(tk.Frame):
 
         
     def end_create_leg(self, event):
-        print("ENDIND", event.x, event.y)
+        '''
+        Ends the leg creation sequence
+
+        If the leg has a valid start, and this is a valid end, create a new leg
+            This will add the leg id to self.legs
+            and create a line between the nodes
+        '''
         leg_end = self.get_node_hit_single(event.x, event.y)
         if leg_end == None:
             self.leg_start = None
@@ -150,6 +161,18 @@ class PathOptimisationFrame(tk.Frame):
             y1 = self.nodes[id_start]['y']
             x2 = self.nodes[id_end]['x']
             y2 = self.nodes[id_end]['y']
+
+            a = abs(float(y1)-y2)/abs(float(x1)-x2)
+            
+            xdir = (x2-x1)/abs(x2-x1)
+            ydir = (y2-y1)/abs(y2-y1)
+            rsq = math.pow((NODE_SIZE/2),2) # type: ignore
+            x1diff = math.pow(rsq/(1.0+math.pow(a,2)),0.5) # type: ignore
+            y1diff = math.pow(rsq/(1+(1/math.pow(a,2))),0.5)#   ((NODE_SIZE/2)/(1.0+(1.0/math.pow(a,2)))) # type: ignore
+            x1 = x1+ xdir * x1diff
+            y1 = y1+ ydir * y1diff
+            x2 = x2- xdir * x1diff
+            y2 = y2- ydir * y1diff
             self.canvas_map.create_line(x1,y1, x2, y2, tags="leg_id_"+leg_id)
 
 
