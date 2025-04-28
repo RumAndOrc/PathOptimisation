@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import messagebox
 from PIL import Image,ImageTk 
 from vars import *  # type: ignore
 import math
@@ -22,8 +23,6 @@ def get_leg_id(ids):
             print("FLIPPING")
         return ids[0]+"<0>"+ids[1]
     
-
-
 
 class PathOptimisationCanvas(tk.Canvas):
     def __init__(self, parent, **kwargs):
@@ -51,12 +50,42 @@ class PathOptimisationFrame(tk.Frame):
         self.start_y = None
         self.current_shape = None
 
-        self.canvas_map.bind("<Button-2>", self.create_node)
+        self.canvas_map.bind("<Button-2>", self.on_middle_click)
         self.canvas_map.tag_bind("node", "<Button-1>",self.start_create_leg)
         self.canvas_map.tag_bind("node", "<ButtonRelease-1>",self.end_create_leg)
         self.leg_start = None
         self.nodes = {}
         self.legs = []
+
+
+    def on_middle_click(self, event):
+        node = self.get_node_hit_single(event.x, event.y)
+        if (node == None):
+            self.create_node(event)
+        else:
+            result = messagebox.askokcancel("Confirmation", " you are about to delete a node, are you sure?")
+            if result:
+                self.remove_node(self.get_node_id(node))
+            else:
+                pass
+
+
+    def remove_node(self, id):
+        print("trying to remove ",id)
+
+        print(self.legs)
+        print(self.nodes)
+        del self.nodes[id]
+
+        self.canvas_map.delete(id)
+        for leg_num in range(len(self.legs)-1,-1,-1):
+            if id in self.legs[leg_num]:
+                self.canvas_map.delete("leg_id_"+self.legs[leg_num])
+                self.legs.pop(leg_num)
+        self.canvas_map.update()
+        
+        print(self.legs)
+        print(self.nodes)
 
     def create_node(self, event):
         '''
