@@ -7,9 +7,9 @@ def get_leg_id(ids):
         '''
         Creates a unique id for a leg
 
-        ids is a list of ids
-        Returns "leg_id_invalid" if more than 2 legs in ids
-        Returns id in the form "node_id_1<$>node_id_2" where $ is leg difficulty modifier (default zero)
+        - ids is a list of ids
+        - Returns "leg_id_invalid" if more than 2 legs in ids, or
+        - Returns id in the form "node_id_1<$>node_id_2" where $ is leg difficulty modifier (default zero)
         '''
         if len(ids) !=2:
             print("cautionleg id invalid")
@@ -35,10 +35,7 @@ class PathOptimisationFrame(tk.Frame):
         super().__init__(parent, **kwargs)
         self.canvas_map = PathOptimisationCanvas(self, width=CANVAS_WIDTH, height=CANVAS_HEIGHT, bg=CANVAS_BG)# type: ignore
         self.canvas_map.pack(side="left")
-        #self.MapCanvas.bind("<Button-1>", self.on_click)
-        #self.MapCanvas.bind("<B1-Motion>", self.on_drag)
-        #self.MapCanvas.bind("<ButtonRelease-1>", self.on_release)
-    
+
         self.is_settings_visible = False
         self.canvas_controls = tk.Canvas(self, width=SIDEBAR_WIDTH, height = SIDEBAR_HEIGHT, bg = SIDEBAR_BG)# type: ignore
         self.canvas_controls.create_rectangle(SIDEBAR_WIDTH-50, SIDEBAR_HEIGHT-30, SIDEBAR_WIDTH, SIDEBAR_HEIGHT, fill="red", tags ="btn_settings")# type: ignore
@@ -63,9 +60,9 @@ class PathOptimisationFrame(tk.Frame):
 
     def create_node(self, event):
         '''
-        creates a new node object (circle on the canvas)
+        Creates a new node object (circle on the canvas)
 
-        updates the dictionary self.nodes with {node_id : {'x':,'y':}}
+        - Updates the dictionary self.nodes with {node_id : {'x':,'y':}}
         '''
         id = self.get_next_ava_node_id()
         print("Created:",self.canvas_map.create_oval(event.x-(NODE_SIZE/2), event.y-(NODE_SIZE/2), # type: ignore
@@ -99,8 +96,8 @@ class PathOptimisationFrame(tk.Frame):
         Gets the node object id of the node colliding with the x,y provided
 
         This is mainly used for click events
-        Returns the canvas node(circle) object id if there is only one,
-        If two overlap then returns None
+        - Returns the canvas node(circle) object id if there is only one,
+        - If two overlap then returns None
         '''
         all_nodes = self.canvas_map.find_withtag("node")
         hits = self.canvas_map.find_overlapping(x-1, y-1, x+1, y+1)
@@ -115,7 +112,7 @@ class PathOptimisationFrame(tk.Frame):
         '''
         Starts the leg creation sequence
 
-        if a single node was clicked sets self.leg_start to that object id        
+        If a single node was clicked sets self.leg_start to that object id        
         '''
         self.leg_start = self.get_node_hit_single(event.x, event.y)
         print("start leg:",self.leg_start,self.canvas_map.gettags(self.leg_start))
@@ -127,7 +124,7 @@ class PathOptimisationFrame(tk.Frame):
         Gets the node id tag from the object provided
 
         This is mainly used for finding the id of the clicked node
-        returns the node_id 
+        - returns the node_id 
         '''
         tags = self.canvas_map.gettags(node)
         for tag in tags:
@@ -140,8 +137,8 @@ class PathOptimisationFrame(tk.Frame):
         Ends the leg creation sequence
 
         If the leg has a valid start, and this is a valid end, create a new leg
-            This will add the leg id to self.legs
-            and create a line between the nodes
+            - Adds the leg id to self.legs, and
+            - Creates a line between the nodes
         '''
         leg_end = self.get_node_hit_single(event.x, event.y)
         if leg_end == None:
@@ -155,15 +152,13 @@ class PathOptimisationFrame(tk.Frame):
             if leg_id in self.legs:
                 print("cautuion: leg already exists")
                 return
-            
+            # below is the trig to make lines start at edges of nodes rather than the centres
             self.legs.append(leg_id)
             x1 = self.nodes[id_start]['x']
             y1 = self.nodes[id_start]['y']
             x2 = self.nodes[id_end]['x']
             y2 = self.nodes[id_end]['y']
-
             a = abs(float(y1)-y2)/abs(float(x1)-x2)
-            
             xdir = (x2-x1)/abs(x2-x1)
             ydir = (y2-y1)/abs(y2-y1)
             rsq = math.pow((NODE_SIZE/2),2) # type: ignore
@@ -174,8 +169,6 @@ class PathOptimisationFrame(tk.Frame):
             x2 = x2- xdir * x1diff
             y2 = y2- ydir * y1diff
             self.canvas_map.create_line(x1,y1, x2, y2, tags="leg_id_"+leg_id)
-
-
         print(self.legs)
         print(self.nodes)
         self.leg_start == None
@@ -183,6 +176,12 @@ class PathOptimisationFrame(tk.Frame):
 
 
     def toggle_settings(self, event):
+        '''
+        Toggles between settings and controls panel on the right side
+
+        - Reads/writes the flag is_settings_visible
+        - The two canvases are packed or unpacked (pack_forget)
+        '''
         if(self.is_settings_visible):
             self.canvas_settings.pack_forget()
             self.canvas_controls.pack(side="right")
@@ -190,32 +189,6 @@ class PathOptimisationFrame(tk.Frame):
             self.canvas_controls.pack_forget()
             self.canvas_settings.pack(side="right")
         self.is_settings_visible = not self.is_settings_visible
-        return
-
-
-    def on_click(self, event):
-        self.start_x = event.x
-        self.start_y = event.y
-        print(event.x, event.y)
-        self.current_shape = None
-        return
-
-
-    def on_drag(self, event):
-        if self.start_x is not None and self.start_y is not None:
-            x = event.x
-            y = event.y
-
-            if self.current_shape:
-                self.canvas_map.delete(self.current_shape)
-            self.current_shape = self.canvas_map.create_rectangle(self.start_x, self.start_y, x, y, fill=NODE_INNER_COLOR)# type: ignore
-        return
-
-
-    def on_release(self, event):
-        self.start_x = None
-        self.start_y = None
-        self.current_shape = None
         return
 
 
