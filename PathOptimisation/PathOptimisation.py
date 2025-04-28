@@ -1,11 +1,35 @@
 import tkinter as tk
 
+from PIL import Image
+
+def color_from_rgb(rgb):
+    print(rgb)
+    rgb = (int(rgb[0]), int(rgb[1]), int(rgb[2]))#
+    """translates an rgb tuple of int to a tkinter friendly color code
+    """
+    return "#%02x%02x%02x" % rgb   
+
+im = Image.open('ColorTheme.bmp') # Can be many different formats.
+pix = im.load()
+
+NODE_INNER_COLOR = color_from_rgb(pix[633,233])
+CANVAS_BG = color_from_rgb(pix[644,718])
+SIDEBAR_BG = color_from_rgb(pix[1100, 250])
+
+CONNECTOR_COLOR = color_from_rgb(pix[375, 260])
+CONNECTOR_EASY_COLOR = color_from_rgb(pix[524, 298])
+CONNECTOR_HARD_COLOR = color_from_rgb(pix[683, 385])
+
 CANVAS_WIDTH = 800
 CANVAS_HEIGHT = 600
-CANVAS_BG = "black"
+
 SIDEBAR_WIDTH = 200
 SIDEBAR_HEIGHT = CANVAS_HEIGHT
-SIDEBAR_BG = "red"
+
+
+
+
+
 
 class PathOptimisationCanvas(tk.Canvas):
     def __init__(self, parent, **kwargs):
@@ -18,9 +42,9 @@ class PathOptimisationFrame(tk.Frame):
         self.MapCanvas.pack(side="left")
         self.ControlsCanvas = tk.Canvas(self, width=SIDEBAR_WIDTH, height = SIDEBAR_HEIGHT, bg = SIDEBAR_BG)
         self.ControlsCanvas.pack(side="right")
-        self.bind("<Button-1>", self.on_click)
-        self.bind("<B1-Motion>", self.on_drag)
-        self.bind("<ButtonRelease-1>", self.on_release)
+        self.MapCanvas.bind("<Button-1>", self.on_click)
+        self.MapCanvas.bind("<B1-Motion>", self.on_drag)
+        self.MapCanvas.bind("<ButtonRelease-1>", self.on_release)
 
         self.start_x = None
         self.start_y = None
@@ -38,8 +62,8 @@ class PathOptimisationFrame(tk.Frame):
             y = event.y
 
             if self.current_shape:
-                self.delete(self.current_shape)
-            self.current_shape = self.create_rectangle(self.start_x, self.start_y, x, y, fill="blue")
+                self.MapCanvas.delete(self.current_shape)
+            self.current_shape = self.MapCanvas.create_rectangle(self.start_x, self.start_y, x, y, fill=NODE_INNER_COLOR)
 
     def on_release(self, event):
         self.start_x = None
