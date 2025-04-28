@@ -1,6 +1,6 @@
 import tkinter as tk
 
-from PIL import Image
+from PIL import Image,ImageTk 
 
 def color_from_rgb(rgb):
     print(rgb)
@@ -26,11 +26,6 @@ CANVAS_HEIGHT = 600
 SIDEBAR_WIDTH = 200
 SIDEBAR_HEIGHT = CANVAS_HEIGHT
 
-
-
-
-
-
 class PathOptimisationCanvas(tk.Canvas):
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
@@ -40,15 +35,33 @@ class PathOptimisationFrame(tk.Frame):
         super().__init__(parent, **kwargs)
         self.MapCanvas = PathOptimisationCanvas(self, width=CANVAS_WIDTH, height=CANVAS_HEIGHT, bg=CANVAS_BG)
         self.MapCanvas.pack(side="left")
-        self.ControlsCanvas = tk.Canvas(self, width=SIDEBAR_WIDTH, height = SIDEBAR_HEIGHT, bg = SIDEBAR_BG)
-        self.ControlsCanvas.pack(side="right")
         self.MapCanvas.bind("<Button-1>", self.on_click)
         self.MapCanvas.bind("<B1-Motion>", self.on_drag)
         self.MapCanvas.bind("<ButtonRelease-1>", self.on_release)
 
+        self.isSettingsPanelVisible = False
+        self.ControlsCanvas = tk.Canvas(self, width=SIDEBAR_WIDTH, height = SIDEBAR_HEIGHT, bg = SIDEBAR_BG)
+        btn_settings = self.ControlsCanvas.create_rectangle(SIDEBAR_WIDTH-50, SIDEBAR_HEIGHT-30, SIDEBAR_WIDTH, SIDEBAR_HEIGHT, fill="red", tags ="btn_settings")
+        self.ControlsCanvas.tag_bind(btn_settings, "<Button-1>",self.swapToSettings)
+        self.ControlsCanvas.pack(side="right")  
+
+        self.SettingsCanvas = tk.Canvas(self, width=SIDEBAR_WIDTH, height = SIDEBAR_HEIGHT, bg = SIDEBAR_BG)
+        btn_Settings = self.SettingsCanvas.create_rectangle(SIDEBAR_WIDTH-50, SIDEBAR_HEIGHT-30, SIDEBAR_WIDTH, SIDEBAR_HEIGHT, fill="red", tags ="btn_settings")
+        self.SettingsCanvas.tag_bind(btn_settings, "<Button-1>",self.swapToSettings)
+        self.SettingsCanvas.create_text(SIDEBAR_WIDTH/2, 50, text="Settings")
+
         self.start_x = None
         self.start_y = None
         self.current_shape = None
+
+    def swapToSettings(self, event):
+        if(self.isSettingsPanelVisible):
+            self.SettingsCanvas.pack_forget()
+            self.ControlsCanvas.pack(side="right")
+        else:
+            self.ControlsCanvas.pack_forget()
+            self.SettingsCanvas.pack(side="right")
+        self.isSettingsPanelVisible = not self.isSettingsPanelVisible
 
     def on_click(self, event):
         self.start_x = event.x
@@ -70,14 +83,12 @@ class PathOptimisationFrame(tk.Frame):
         self.start_y = None
         self.current_shape = None
 
-
 def main():
     root = tk.Tk()
     root.title("Custom Canvas Example")
     TopFrame = PathOptimisationFrame(root, width=CANVAS_WIDTH+SIDEBAR_WIDTH, height=CANVAS_HEIGHT, bg="yellow")
     
     TopFrame.pack(padx=0, pady=0)
-   
 
     root.mainloop()
 
