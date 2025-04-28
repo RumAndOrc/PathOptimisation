@@ -3,6 +3,28 @@ from PIL import Image,ImageTk
 from vars import *  # type: ignore
 
 
+def get_leg_id(ids):
+        '''
+        Creates a unique id for a leg
+
+        ids is a list of ids
+        Returns "leg_id_invalid" if more than 2 legs in ids
+        Returns id in the form "node_id_1<$>node_id_2" where $ is leg difficulty modifier (default zero)
+        '''
+        if len(ids) !=2:
+            print("cautionleg id invalid")
+            return "leg_id_invalid"
+        num1 =int(ids[0].split('_')[-1])
+        num2 =int(ids[1].split('_')[-1])
+        print("NUMBNERS:", num1, num2)
+        if num1>num2:
+            ids = ids[::-1]
+            print("FLIPPING")
+        return ids[0]+"<0>"+ids[1]
+    
+
+
+
 class PathOptimisationCanvas(tk.Canvas):
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
@@ -41,6 +63,11 @@ class PathOptimisationFrame(tk.Frame):
 
 
     def create_node(self, event):
+        '''
+        creates a new node object (circle on the canvas)
+
+        updates the dictionary self.nodes with {node_id : {'x':,'y':}}
+        '''
         id = self.get_next_ava_node_id()
         print("Created:",self.canvas_map.create_oval(event.x-(NODE_SIZE/2), event.y-(NODE_SIZE/2), # type: ignore
                                    event.x+(NODE_SIZE/2), event.y+(NODE_SIZE/2), # type: ignore
@@ -51,6 +78,12 @@ class PathOptimisationFrame(tk.Frame):
     
 
     def get_next_ava_node_id(self):
+        '''
+        Determines the next unused node id
+
+        IDs are of the form "node_id_$" where $ is an integer starting from zero
+        This searches from zero each time so ids previously deleted to be reused
+        '''
         valid_id=None
         id = 0
         while(valid_id == None):
@@ -63,6 +96,13 @@ class PathOptimisationFrame(tk.Frame):
     
 
     def get_node_hit_single(self, x,y):
+        '''
+        Gets the node object id of the node colliding with the x,y provided
+
+        This is mainly used for click events
+        Returns the canvas node(circle) object id if there is only one,
+        If two overlap then returns None
+        '''
         all_nodes = self.canvas_map.find_withtag("node")
         hits = self.canvas_map.find_overlapping(x-1, y-1, x+1, y+1)
         target = list(set(all_nodes)&set(hits))
@@ -72,17 +112,12 @@ class PathOptimisationFrame(tk.Frame):
         return None
 
 
-    def get_leg_id(self,ids):
-        if len(ids) !=2:
-            return "leg_id_invalid"
-        num1 =int(ids[0].split('_')[-1])
-        num2 =int(ids[1].split('_')[-1])
-        if num1>num2:
-            ids == ids[::-1]
-        return ids[0]+"<->"+ids[1]
-    
-
     def start_create_leg(self, event):
+        '''
+        Starts the leg creation sequence
+
+        if a single node was clicked sets self.leg_start to that object id        
+        '''
         self.leg_start = self.get_node_hit_single(event.x, event.y)
         print("start leg:",self.leg_start,self.canvas_map.gettags(self.leg_start))
         return
@@ -96,11 +131,15 @@ class PathOptimisationFrame(tk.Frame):
 
         
     def end_create_leg(self, event):
+        print("ENDIND", event.x, event.y)
         leg_end = self.get_node_hit_single(event.x, event.y)
+        if leg_end == None:
+            self.leg_start = None
+            return
         if self.leg_start != None and leg_end != self.leg_start:
             id_start = self.get_node_id(self.leg_start)
             id_end = self.get_node_id(leg_end)
-            leg_id = self.get_leg_id([id_start, id_end])
+            leg_id = get_leg_id([id_start, id_end])
 
             if leg_id in self.legs:
                 print("cautuion: leg already exists")
