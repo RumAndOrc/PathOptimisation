@@ -51,7 +51,7 @@ class PathOptimisationFrame(tk.Frame):
         self.current_shape = None
 
         self.canvas_map.bind("<Button-2>", self.on_middle_click)
-        self.canvas_map.tag_bind("node", "<Button-1>",self.start_create_leg)
+        self.canvas_map.tag_bind("node", "<Button-1>",self.start_drag_from_node)
         self.canvas_map.tag_bind("node", "<ButtonRelease-1>",self.end_create_leg)
         self.leg_start = None
         self.nodes = {}
@@ -126,6 +126,15 @@ class PathOptimisationFrame(tk.Frame):
         return None
 
 
+    def create_node_from_data(self, id):
+        x = self.nodes[id]['x']
+        y = self.nodes[id]['y']
+        print("Created:",self.canvas_map.create_oval(x-(NODE_SIZE/2), y-(NODE_SIZE/2), # type: ignore
+                                   x+(NODE_SIZE/2), y+(NODE_SIZE/2), # type: ignore
+                                   fill = NODE_INNER_COLOR, # type: ignore
+                                   tags = ["node",id]))
+        
+
     def create_node(self, event):
         '''
         Creates a new node object (circle on the canvas)
@@ -133,11 +142,8 @@ class PathOptimisationFrame(tk.Frame):
         - Updates the dictionary self.nodes with {node_id : {'x':,'y':}}
         '''
         id = self.get_next_ava_node_id()
-        print("Created:",self.canvas_map.create_oval(event.x-(NODE_SIZE/2), event.y-(NODE_SIZE/2), # type: ignore
-                                   event.x+(NODE_SIZE/2), event.y+(NODE_SIZE/2), # type: ignore
-                                   fill = NODE_INNER_COLOR, # type: ignore
-                                   tags = ["node",id]))
         self.nodes.update({id:{'x':event.x, 'y':event.y}})
+        self.create_node_from_data(id)
         return
     
 
@@ -181,9 +187,9 @@ class PathOptimisationFrame(tk.Frame):
         return [x1,y1,x2,y2]
 
 
-    def start_create_leg(self, event):
+    def start_drag_from_node(self, event):
         '''
-        Starts the leg creation sequence
+        Starts the dragging sequence, to either create a leg or move a node
 
         If a single node was clicked sets self.leg_start to that object id        
         '''
@@ -202,6 +208,7 @@ class PathOptimisationFrame(tk.Frame):
         '''
         leg_end = self.get_node_hit_single(event.x, event.y)
         if leg_end == None:
+            
             self.leg_start = None
             return
         if self.leg_start != None and leg_end != self.leg_start:
