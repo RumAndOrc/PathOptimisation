@@ -36,13 +36,13 @@ class PathOptimisationFrame(tk.Frame):
         self.canvas_map.pack(side="left")
 
         self.is_settings_visible = False
-        self.canvas_controls = tk.Canvas(self, width=SIDEBAR_WIDTH, height = SIDEBAR_HEIGHT, bg = SIDEBAR_BG)# type: ignore
-        self.canvas_controls.create_rectangle(SIDEBAR_WIDTH-50, SIDEBAR_HEIGHT-30, SIDEBAR_WIDTH, SIDEBAR_HEIGHT, fill="red", tags ="btn_settings")# type: ignore
+        self.canvas_controls = tk.Canvas(self, width=SIDEBAR_WIDTH, height = CANVAS_HEIGHT, bg = SIDEBAR_BG)# type: ignore
+        self.canvas_controls.create_rectangle(SIDEBAR_WIDTH-50, CANVAS_HEIGHT-30, SIDEBAR_WIDTH, CANVAS_HEIGHT, fill="red", tags ="btn_settings")# type: ignore
         self.canvas_controls.tag_bind("btn_settings", "<Button-1>",self.toggle_settings)
         self.canvas_controls.pack(side="right")  
 
-        self.canvas_settings = tk.Canvas(self, width=SIDEBAR_WIDTH, height = SIDEBAR_HEIGHT, bg = SIDEBAR_BG)# type: ignore
-        self.canvas_settings.create_rectangle(SIDEBAR_WIDTH-50, SIDEBAR_HEIGHT-30, SIDEBAR_WIDTH, SIDEBAR_HEIGHT, fill="red", tags ="btn_settings")# type: ignore
+        self.canvas_settings = tk.Canvas(self, width=SIDEBAR_WIDTH, height = CANVAS_HEIGHT, bg = SIDEBAR_BG)# type: ignore
+        self.canvas_settings.create_rectangle(SIDEBAR_WIDTH-50, CANVAS_HEIGHT-30, SIDEBAR_WIDTH, CANVAS_HEIGHT, fill="red", tags ="btn_settings")# type: ignore
         self.canvas_settings.tag_bind("btn_settings", "<Button-1>",self.toggle_settings)
         self.canvas_settings.create_text(SIDEBAR_WIDTH/2, 50, text="Settings") # type: ignore
 
@@ -59,6 +59,14 @@ class PathOptimisationFrame(tk.Frame):
 
 
     def on_middle_click(self, event):
+        '''
+        Event handler for middle clicking on the map canvas
+
+        -   If an existing node was clicked display a popup 
+            warning message asking to confirm delete, then if yes
+            call self.remove_node
+        -   If a blank space was clicked, call self.create_node
+        '''
         node = self.get_node_hit_single(event.x, event.y)
         if (node == None):
             self.create_node(event)
@@ -71,21 +79,23 @@ class PathOptimisationFrame(tk.Frame):
 
 
     def remove_node(self, id):
-        print("trying to remove ",id)
+        '''
+        Removes a node and all associated legs
 
-        print(self.legs)
-        print(self.nodes)
+        At present, removes:
+            - node circles
+            - node dict entry in self.nodes
+            - associated leg lines
+            - associated leg entries in self.legs
+        '''
         del self.nodes[id]
-
         self.canvas_map.delete(id)
         for leg_num in range(len(self.legs)-1,-1,-1):
             if id in self.legs[leg_num]:
                 self.canvas_map.delete("leg_id_"+self.legs[leg_num])
                 self.legs.pop(leg_num)
         self.canvas_map.update()
-        
-        print(self.legs)
-        print(self.nodes)
+
 
     def create_node(self, event):
         '''
