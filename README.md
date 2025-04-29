@@ -15,8 +15,11 @@ This will be a node editor to represent junctions on a map
 
 ### Usage
 * Middle mouse button to create a new node, or delete an existing one
-* left click and drag to create a leg between two nodes
-* left click to move a node
+* left click and drag to
+  * create a leg between two nodes, or
+  * move a node
+* right click to clear the legs from a node
+
 
 ## Optimiser
 
