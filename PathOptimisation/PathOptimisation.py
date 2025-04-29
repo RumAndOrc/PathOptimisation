@@ -78,40 +78,6 @@ class PathOptimisationFrame(tk.Frame):
                 pass
 
 
-    def remove_node(self, id):
-        '''
-        Removes a node and all associated legs
-
-        At present, removes:
-            - node circles
-            - node dict entry in self.nodes
-            - associated leg lines
-            - associated leg entries in self.legs
-        '''
-        del self.nodes[id]
-        self.canvas_map.delete(id)
-        for leg_num in range(len(self.legs)-1,-1,-1):
-            if id in self.legs[leg_num]:
-                self.canvas_map.delete("leg_id_"+self.legs[leg_num])
-                self.legs.pop(leg_num)
-        self.canvas_map.update()
-
-
-    def create_node(self, event):
-        '''
-        Creates a new node object (circle on the canvas)
-
-        - Updates the dictionary self.nodes with {node_id : {'x':,'y':}}
-        '''
-        id = self.get_next_ava_node_id()
-        print("Created:",self.canvas_map.create_oval(event.x-(NODE_SIZE/2), event.y-(NODE_SIZE/2), # type: ignore
-                                   event.x+(NODE_SIZE/2), event.y+(NODE_SIZE/2), # type: ignore
-                                   fill = NODE_INNER_COLOR, # type: ignore
-                                   tags = ["node",id]))
-        self.nodes.update({id:{'x':event.x, 'y':event.y}})
-        return
-    
-
     def get_next_ava_node_id(self):
         '''
         Determines the next unused node id
@@ -130,6 +96,19 @@ class PathOptimisationFrame(tk.Frame):
         return valid_id
     
 
+    def get_node_id(self, node):
+        '''
+        Gets the node id tag from the object provided
+
+        This is mainly used for finding the id of the clicked node
+        - returns the node_id 
+        '''
+        tags = self.canvas_map.gettags(node)
+        for tag in tags:
+            if "node_id_" in tag:
+                return tag
+
+
     def get_node_hit_single(self, x,y):
         '''
         Gets the node object id of the node colliding with the x,y provided
@@ -147,6 +126,61 @@ class PathOptimisationFrame(tk.Frame):
         return None
 
 
+    def create_node(self, event):
+        '''
+        Creates a new node object (circle on the canvas)
+
+        - Updates the dictionary self.nodes with {node_id : {'x':,'y':}}
+        '''
+        id = self.get_next_ava_node_id()
+        print("Created:",self.canvas_map.create_oval(event.x-(NODE_SIZE/2), event.y-(NODE_SIZE/2), # type: ignore
+                                   event.x+(NODE_SIZE/2), event.y+(NODE_SIZE/2), # type: ignore
+                                   fill = NODE_INNER_COLOR, # type: ignore
+                                   tags = ["node",id]))
+        self.nodes.update({id:{'x':event.x, 'y':event.y}})
+        return
+    
+
+    def remove_node(self, id):
+        '''
+        Removes a node and all associated legs
+
+        At present, removes:
+            - node circles
+            - node dict entry in self.nodes
+            - associated leg lines
+            - associated leg entries in self.legs
+        '''
+        del self.nodes[id]
+        self.canvas_map.delete(id)
+        self.remove_legs(id)
+        self.canvas_map.update()
+
+
+    def calculate_leg_coords(self, id_start, id_end):
+        '''
+        Calculates the start and end points for leg lines
+        such that the lines start at the edge of the node circles
+        
+        Takes in the tag id of each node, returns coords [x1,y1,x2,y2]
+        '''
+        x1 = self.nodes[id_start]['x']
+        y1 = self.nodes[id_start]['y']
+        x2 = self.nodes[id_end]['x']
+        y2 = self.nodes[id_end]['y']
+        a = abs(float(y1)-y2)/abs(float(x1)-x2)
+        xdir = (x2-x1)/abs(x2-x1)
+        ydir = (y2-y1)/abs(y2-y1)
+        rsq = math.pow((NODE_SIZE/2),2) # type: ignore
+        x1diff = math.pow(rsq/(1.0+math.pow(a,2)),0.5) # type: ignore
+        y1diff = math.pow(rsq/(1+(1/math.pow(a,2))),0.5)#   ((NODE_SIZE/2)/(1.0+(1.0/math.pow(a,2)))) # type: ignore
+        x1 = x1+ xdir * x1diff
+        y1 = y1+ ydir * y1diff
+        x2 = x2- xdir * x1diff
+        y2 = y2- ydir * y1diff
+        return [x1,y1,x2,y2]
+
+
     def start_create_leg(self, event):
         '''
         Starts the leg creation sequence
@@ -157,19 +191,6 @@ class PathOptimisationFrame(tk.Frame):
         print("start leg:",self.leg_start,self.canvas_map.gettags(self.leg_start))
         return
     
-
-    def get_node_id(self, node):
-        '''
-        Gets the node id tag from the object provided
-
-        This is mainly used for finding the id of the clicked node
-        - returns the node_id 
-        '''
-        tags = self.canvas_map.gettags(node)
-        for tag in tags:
-            if "node_id_" in tag:
-                return tag
-
         
     def end_create_leg(self, event):
         '''
@@ -191,28 +212,23 @@ class PathOptimisationFrame(tk.Frame):
             if leg_id in self.legs:
                 print("cautuion: leg already exists")
                 return
-            # below is the trig to make lines start at edges of nodes rather than the centres
-            self.legs.append(leg_id)
-            x1 = self.nodes[id_start]['x']
-            y1 = self.nodes[id_start]['y']
-            x2 = self.nodes[id_end]['x']
-            y2 = self.nodes[id_end]['y']
-            a = abs(float(y1)-y2)/abs(float(x1)-x2)
-            xdir = (x2-x1)/abs(x2-x1)
-            ydir = (y2-y1)/abs(y2-y1)
-            rsq = math.pow((NODE_SIZE/2),2) # type: ignore
-            x1diff = math.pow(rsq/(1.0+math.pow(a,2)),0.5) # type: ignore
-            y1diff = math.pow(rsq/(1+(1/math.pow(a,2))),0.5)#   ((NODE_SIZE/2)/(1.0+(1.0/math.pow(a,2)))) # type: ignore
-            x1 = x1+ xdir * x1diff
-            y1 = y1+ ydir * y1diff
-            x2 = x2- xdir * x1diff
-            y2 = y2- ydir * y1diff
-            self.canvas_map.create_line(x1,y1, x2, y2, tags="leg_id_"+leg_id)
+            self.legs.append(leg_id)          
+            coords = self.calculate_leg_coords(id_start,id_end)
+            self.canvas_map.create_line(coords, tags="leg_id_"+leg_id)
         print(self.legs)
         print(self.nodes)
         self.leg_start == None
         return
 
+    def remove_legs(self, id):
+        if '<' in id and '>' in id: # remove a particular leg
+            self.canvas_map.delete(id)
+            self.legs.remove(id)
+        else: # remove all legs associated with a node
+            for leg_num in range(len(self.legs)-1,-1,-1):
+                if id in self.legs[leg_num]:
+                    self.canvas_map.delete("leg_id_"+self.legs[leg_num])
+                    self.legs.pop(leg_num)
 
     def toggle_settings(self, event):
         '''
