@@ -4,7 +4,7 @@ from PIL import Image,ImageTk
 from vars import *  # type: ignore
 import math
 
-def get_leg_id(ids):
+def create_leg_id(ids):
         '''
         Creates a unique id for a leg
 
@@ -52,7 +52,8 @@ class PathOptimisationFrame(tk.Frame):
 
         self.canvas_map.bind("<Button-2>", self.on_middle_click)
         self.canvas_map.tag_bind("node", "<Button-1>",self.start_drag_from_node)
-        self.canvas_map.tag_bind("node", "<ButtonRelease-1>",self.end_create_leg)
+        self.canvas_map.tag_bind("node", "<ButtonRelease-1>",self.end_drag_from_node)
+        self.canvas_map.tag_bind("node", "<Button-3>",self.clear_legs_from_node)
         self.leg_start = None
         self.nodes = {}
         self.legs = []
@@ -158,10 +159,20 @@ class PathOptimisationFrame(tk.Frame):
             - associated leg entries in self.legs
         '''
         del self.nodes[id]
+        
         self.canvas_map.delete(id)
         self.remove_legs(id)
         self.canvas_map.update()
 
+
+    def clear_legs_from_node(self,event):
+        '''
+        Deletes the legs associated with a node
+
+        '''
+        id = self.get_node_id(self.get_node_hit_single(event.x,event.y))
+        self.remove_legs(id)
+  
 
     def calculate_leg_coords(self, id_start, id_end):
         '''
@@ -194,11 +205,24 @@ class PathOptimisationFrame(tk.Frame):
         If a single node was clicked sets self.leg_start to that object id        
         '''
         self.leg_start = self.get_node_hit_single(event.x, event.y)
-        print("start leg:",self.leg_start,self.canvas_map.gettags(self.leg_start))
         return
     
-        
-    def end_create_leg(self, event):
+    
+    def move_node(self, event):
+        '''
+        Moves a node to new location (from mouse-button-up event)
+        '''
+        x = event.x
+        y = event.y
+        id_start = self.get_node_id(self.leg_start)
+        self.nodes.update({id_start:{'x':x, 'y':y}})
+        self.canvas_map.coords(id_start, x-(NODE_SIZE/2), y-(NODE_SIZE/2), x+(NODE_SIZE/2), y+(NODE_SIZE/2)) # type: ignore
+        self.move_legs_by_node(id_start)
+        self.canvas_map.update()
+        return
+
+
+    def end_drag_from_node(self, event):
         '''
         Ends the leg creation sequence
 
@@ -207,27 +231,65 @@ class PathOptimisationFrame(tk.Frame):
             - Creates a line between the nodes
         '''
         leg_end = self.get_node_hit_single(event.x, event.y)
-        if leg_end == None:
-            
+        if leg_end == None: #dont create leg, look to move node
+            if self.leg_start != None:
+                self.move_node(event)
             self.leg_start = None
             return
-        if self.leg_start != None and leg_end != self.leg_start:
-            id_start = self.get_node_id(self.leg_start)
-            id_end = self.get_node_id(leg_end)
-            leg_id = get_leg_id([id_start, id_end])
+        elif self.leg_start != None and leg_end != self.leg_start:
+            self.create_leg(self.leg_start,leg_end)
+        return
+    
+    def move_leg(self, id, id_start, id_end):
+        '''
+        Moves an individual leg
 
-            if leg_id in self.legs:
-                print("cautuion: leg already exists")
-                return
-            self.legs.append(leg_id)          
-            coords = self.calculate_leg_coords(id_start,id_end)
-            self.canvas_map.create_line(coords, tags="leg_id_"+leg_id)
-        print(self.legs)
-        print(self.nodes)
+        Takes the leg id and ids of the start and end nodes
+        '''
+        coords = self.calculate_leg_coords(id_start,id_end)
+        self.canvas_map.coords("leg_id_"+id, coords)
+        self.canvas_map.update()
+
+    def create_leg(self, leg_start,leg_end):
+        '''
+        Creates a new leg between two nodes
+
+        '''
+        id_start = self.get_node_id(leg_start)
+        id_end = self.get_node_id(leg_end)
+        leg_id = create_leg_id([id_start, id_end])
+
+        if leg_id in self.legs:
+            print("cautuion: leg already exists")
+            return
+        
+        self.legs.append(leg_id)          
+        coords = self.calculate_leg_coords(id_start,id_end)
+        self.canvas_map.create_line(coords, tags="leg_id_"+leg_id)
         self.leg_start == None
         return
 
+    def move_legs_by_node(self, id):
+        '''
+        Moves the legs associated with a moved node
+
+        id is node id
+        
+        '''
+        for leg_num in range(len(self.legs)-1,-1,-1):
+            if id in self.legs[leg_num]:
+                id1 = self.legs[leg_num].split('<')[0]
+                id2 = self.legs[leg_num].split('>')[1]
+                self.move_leg(self.legs[leg_num], id1, id2)
+
     def remove_legs(self, id):
+        '''
+        Removes an individual leg or all legs associated with a node
+
+        Takes in either
+            - leg id
+            - node id
+        '''
         if '<' in id and '>' in id: # remove a particular leg
             self.canvas_map.delete(id)
             self.legs.remove(id)
@@ -236,6 +298,7 @@ class PathOptimisationFrame(tk.Frame):
                 if id in self.legs[leg_num]:
                     self.canvas_map.delete("leg_id_"+self.legs[leg_num])
                     self.legs.pop(leg_num)
+
 
     def toggle_settings(self, event):
         '''
