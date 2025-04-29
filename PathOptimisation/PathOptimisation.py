@@ -17,10 +17,8 @@ def create_leg_id(ids):
             return "leg_id_invalid"
         num1 =int(ids[0].split('_')[-1])
         num2 =int(ids[1].split('_')[-1])
-        print("NUMBNERS:", num1, num2)
         if num1>num2:
             ids = ids[::-1]
-            print("FLIPPING")
         return ids[0]+"<0>"+ids[1]
     
 
@@ -46,17 +44,38 @@ class PathOptimisationFrame(tk.Frame):
         self.canvas_settings.tag_bind("btn_settings", "<Button-1>",self.toggle_settings)
         self.canvas_settings.create_text(SIDEBAR_WIDTH/2, 50, text="Settings") # type: ignore
 
-        self.start_x = None
-        self.start_y = None
-        self.current_shape = None
-
         self.canvas_map.bind("<Button-2>", self.on_middle_click)
         self.canvas_map.tag_bind("node", "<Button-1>",self.start_drag_from_node)
         self.canvas_map.tag_bind("node", "<ButtonRelease-1>",self.end_drag_from_node)
         self.canvas_map.tag_bind("node", "<Button-3>",self.clear_legs_from_node)
+
+        self.canvas_map.bind("<B1-Motion>", self.on_drag)
+
         self.leg_start = None
+        self.temp_line = None
         self.nodes = {}
         self.legs = []
+
+
+    def on_drag(self, event):
+        '''
+        Creates a temporary line while dragging from a node
+        '''
+        if self.leg_start ==None:
+            return
+        x = event.x
+        y = event.y
+
+        if self.leg_start ==None:
+            self.canvas_map.delete(self.temp_line)
+        else:
+            id = self.get_node_id(self.leg_start)
+            self.canvas_map.coords(self.temp_line, self.nodes[id]['x'],self.nodes[id]['y'],x,y)
+                    
+        return
+
+
+
 
 
     def on_middle_click(self, event):
@@ -121,7 +140,6 @@ class PathOptimisationFrame(tk.Frame):
         all_nodes = self.canvas_map.find_withtag("node")
         hits = self.canvas_map.find_overlapping(x-1, y-1, x+1, y+1)
         target = list(set(all_nodes)&set(hits))
-        print("target node[s]:",target)
         if(len(target) == 1):
             return target[0]
         return None
@@ -130,10 +148,10 @@ class PathOptimisationFrame(tk.Frame):
     def create_node_from_data(self, id):
         x = self.nodes[id]['x']
         y = self.nodes[id]['y']
-        print("Created:",self.canvas_map.create_oval(x-(NODE_SIZE/2), y-(NODE_SIZE/2), # type: ignore
+        "Created:",self.canvas_map.create_oval(x-(NODE_SIZE/2), y-(NODE_SIZE/2), # type: ignore
                                    x+(NODE_SIZE/2), y+(NODE_SIZE/2), # type: ignore
                                    fill = NODE_INNER_COLOR, # type: ignore
-                                   tags = ["node",id]))
+                                   tags = ["node",id])
         
 
     def create_node(self, event):
@@ -205,6 +223,7 @@ class PathOptimisationFrame(tk.Frame):
         If a single node was clicked sets self.leg_start to that object id        
         '''
         self.leg_start = self.get_node_hit_single(event.x, event.y)
+        self.temp_line = self.canvas_map.create_line(event.x, event.y, event.x, event.y, fill="black",dash=(5,1))# type: ignore
         return
     
     
@@ -230,14 +249,15 @@ class PathOptimisationFrame(tk.Frame):
             - Adds the leg id to self.legs, and
             - Creates a line between the nodes
         '''
+        self.canvas_map.delete(self.temp_line)
+        self.temp_line = None
         leg_end = self.get_node_hit_single(event.x, event.y)
         if leg_end == None: #dont create leg, look to move node
             if self.leg_start != None:
-                self.move_node(event)
-            self.leg_start = None
-            return
+                self.move_node(event)            
         elif self.leg_start != None and leg_end != self.leg_start:
             self.create_leg(self.leg_start,leg_end)
+        self.leg_start = None
         return
     
     def move_leg(self, id, id_start, id_end):
