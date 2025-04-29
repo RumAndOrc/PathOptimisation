@@ -6,13 +6,17 @@
 This will be a node editor to represent junctions on a map 
 
 ### Key features:
-* distances between nodes will be to scale
-* lines will be colour coded 
-  * black for distance is to-scale
-  * red for some hindrance making the path more difficult than the default distance
-  * blue for an easier than default distance
-* distances will be rounded to integers for simplicity
+* Distances between nodes will be to scale
+* Lines will be colour coded (these will be changeable in the settings later)
+  * Black for distance is to-scale
+  * Red for some hindrance making the path more difficult than the default distance
+  * Blue for an easier than default distance
+* Distances will be rounded to integers for simplicity
 
+### Usage
+* Middle mouse button to create a new node, or delete an existing one
+* left click and drag to create a leg between two nodes
+* left click to move a node
 
 ## Optimiser
 
